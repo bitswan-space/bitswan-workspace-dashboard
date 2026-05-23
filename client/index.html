@@ -16,8 +16,8 @@
       // close immediately. Runs before the SPA bundle loads so the user
       // doesn't see a flash of the dashboard inside the popup.
       // window.name is preserved across the OAuth round-trip (Keycloak +
-      // oauth2-proxy callback) so this works regardless of the final URL
-      // oauth2-proxy redirects to.
+      // bailey wrap) so this works regardless of the final URL
+      // the bailey wrap iframe loads.
       (function () {
         try {
           if (
