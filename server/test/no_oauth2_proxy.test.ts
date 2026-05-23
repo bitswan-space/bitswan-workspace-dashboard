@@ -15,9 +15,11 @@ const SKIP_DIRS = new Set([
   '.git', 'node_modules', 'dist', 'build', '.next', 'coverage', '.cache',
 ]);
 const SKIP_FILES = new Set([
-  // This test file itself is allowed to mention the forbidden patterns.
+  // These test files mention the forbidden patterns intentionally
+  // (meta-tests + positive identity-header coverage).
   'server/test/no_oauth2_proxy.test.ts',
   'server/test/auth.test.ts',
+  'server/test/identity_headers.test.ts',
   'PLAN-bailey-protected-ingress.md',
 ]);
 
