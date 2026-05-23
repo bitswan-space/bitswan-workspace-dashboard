@@ -1,51 +1,33 @@
 import type { FastifyInstance } from 'fastify';
 
 /**
- * Tiny HTML page the OAuth login popup lands on. It postMessages the opener
- * (the iframe) and self-closes.
- */
-const LOGIN_DONE_HTML = /*html*/ `
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>Signed in</title>
-    <style>
-      html, body { margin: 0; height: 100%; }
-      body {
-        font-family: ui-sans-serif, system-ui, sans-serif;
-        background: #1e1e1e;
-        color: #d4d4d4;
-        display: grid;
-        place-items: center;
-        text-align: center;
-        padding: 16px;
-      }
-    </style>
-  </head>
-  <body>
-    <div>
-      <p>Signed in successfully.</p>
-      <p style="opacity: 0.6">You can close this window.</p>
-    </div>
-    <script>
-      try {
-        if (window.opener && !window.opener.closed) {
-          window.opener.postMessage('login-done', window.location.origin);
-        }
-      } catch (e) {}
-      setTimeout(function () { window.close(); }, 50);
-    </script>
-  </body>
-</html>`;
-
-/**
- * Routes that support the iframe SSO popup flow. The dashboard SPA opens
- * `/oauth2/start?rd=/_login_done` in a popup; oauth2-proxy bounces back to
- * `/_login_done` here on success, which postMessages the iframe parent.
+ * Auth lives entirely in bailey-proxy upstream of this container. Identity
+ * arrives on every request as the X-Forwarded-Email / X-Forwarded-Groups
+ * headers; the dashboard trusts them within the bailey trust boundary
+ * (the proxy is the only thing that can route public traffic here).
+ *
+ * We keep the route function around as a deliberate hook so future bailey-
+ * specific endpoints (e.g. /whoami) can live alongside, but the legacy
+ * popup-callback page from the old setup is gone — bailey doesn't open
+ * popups, the wrap iframe owns the session.
  */
 export function registerAuthRoutes(app: FastifyInstance): void {
-  app.get('/_login_done', async (_req, reply) => {
-    reply.type('text/html').send(LOGIN_DONE_HTML);
+  app.get('/whoami', async (req, reply) => {
+    const email = headerFirst(req.headers['x-forwarded-email']);
+    const groups = headerFirst(req.headers['x-forwarded-groups']);
+    if (!email) {
+      reply.code(401).send({ error: 'no identity on request' });
+      return;
+    }
+    reply.send({
+      email,
+      groups: groups ? groups.split(',').map((g) => g.trim()).filter(Boolean) : [],
+    });
   });
+}
+
+function headerFirst(v: unknown): string | undefined {
+  if (typeof v === 'string') return v || undefined;
+  if (Array.isArray(v) && v.length > 0 && typeof v[0] === 'string') return v[0];
+  return undefined;
 }

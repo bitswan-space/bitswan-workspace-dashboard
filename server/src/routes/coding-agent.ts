@@ -54,9 +54,9 @@ function agentHost(): string {
 }
 
 function emailFromRequest(req: FastifyRequest): string {
-  // oauth2-proxy fronts the dashboard and sets this header on every
+  // bailey-proxy fronts the dashboard and sets this header on every
   // upstream request; outside that boundary there's no authenticated user.
-  const raw = req.headers['x-auth-request-email'];
+  const raw = req.headers['x-forwarded-email'];
   if (typeof raw === 'string' && raw) return raw;
   if (Array.isArray(raw) && raw[0]) return raw[0];
   return 'unknown';

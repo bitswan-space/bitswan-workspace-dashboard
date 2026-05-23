@@ -39,10 +39,6 @@ export default defineConfig({
         changeOrigin: true,
       },
       // OAuth popup completion page (Fastify route).
-      '/_login_done': {
-        target: BACKEND_HTTP,
-        changeOrigin: true,
-      },
     },
   },
 });
