@@ -132,6 +132,22 @@
   flex-direction: column;
   gap: 4px;
 }
+.spec-doc .ProseMirror li > ul,
+.spec-doc .ProseMirror li > ol {
+  margin-bottom: 0;
+  position: relative;
+}
+/* Guide line dropping from the parent bullet down its nested items. */
+.spec-doc .ProseMirror li > ul::before,
+.spec-doc .ProseMirror li > ol::before {
+  content: '';
+  position: absolute;
+  left: -13px;
+  top: 2px;
+  bottom: 2px;
+  width: 1px;
+  background: #e4e4e7;
+}
 .spec-doc .ProseMirror ul {
   list-style: disc;
 }
