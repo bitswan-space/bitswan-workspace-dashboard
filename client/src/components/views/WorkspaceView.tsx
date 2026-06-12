@@ -63,7 +63,7 @@ export function WorkspaceView({ bp, wt, tab, onTab }: WorkspaceViewProps) {
         (bpInWt && wt ? (
           // Worktree scope: the spec is editable — writes the worktree's
           // README.md. Main scope below stays read-only (no write path).
-          <SpecificationTab bp={bp} worktree={wt.name} />
+          <SpecificationTab bp={bp} worktree={wt.name} onShowAgents={() => onTab('agent')} />
         ) : (
           <div className="flex-1 overflow-auto bg-background">
             <div className="mx-auto max-w-4xl px-7 py-6">

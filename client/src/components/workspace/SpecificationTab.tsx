@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Save } from 'lucide-react';
+import { Bot, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   ProseMirror,
@@ -31,6 +31,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { useSessions } from '@/components/agents/SessionProvider';
 import { FlowchartEditorModal } from '@/components/workspace/FlowchartEditorModal';
 import { SpecAttachments } from '@/components/workspace/SpecAttachments';
 import { SpecEditorToolbar } from '@/components/workspace/SpecEditorToolbar';
@@ -58,6 +59,8 @@ interface SpecificationTabProps {
   bp: BusinessProcess;
   /** Worktree whose copy of the README is edited. */
   worktree: string;
+  /** Flips the workspace to the Coding Agent tab (Build automation). */
+  onShowAgents: () => void;
 }
 
 type LoadState =
@@ -224,7 +227,8 @@ function serializeDoc(state: EditorState): string {
  * and embedded mermaid flowcharts live in the same worktree files, so
  * the coding agent sees everything the user authored.
  */
-export function SpecificationTab({ bp, worktree }: SpecificationTabProps) {
+export function SpecificationTab({ bp, worktree, onShowAgents }: SpecificationTabProps) {
+  const { startSession, agentStatus, ensureAgent } = useSessions();
   const [editorState, setEditorState] = useState<EditorState>();
   const [load, setLoad] = useState<LoadState>({ kind: 'loading' });
   const [save, setSave] = useState<SaveState>({ kind: 'clean' });
@@ -448,6 +452,22 @@ export function SpecificationTab({ bp, worktree }: SpecificationTabProps) {
     dispatchTransaction(state.tr.delete(pos, pos + node.nodeSize));
   }, [mermaidDeletePos, dispatchTransaction]);
 
+  // "Build automation" sends the description to the coding agent: flush
+  // any unsaved edits first (the agent reads README.md from disk), then
+  // launch an automation-kind session and flip to the Coding Agent tab.
+  const onBuildAutomation = async () => {
+    void doSave(false);
+    if (agentStatus === 'idle' || agentStatus === 'failed') {
+      try {
+        await ensureAgent();
+      } catch {
+        // surfaces via agentStatus; the session will still attempt to spawn
+      }
+    }
+    startSession(worktree, bp.name, 'automation');
+    onShowAgents();
+  };
+
   // ---- Render -------------------------------------------------------------
 
   const empty = editorState ? docIsEmpty(editorState.doc) : false;
@@ -468,6 +488,7 @@ export function SpecificationTab({ bp, worktree }: SpecificationTabProps) {
         </div>
         <Button
           size="sm"
+          variant="outline"
           onClick={() => void doSave(true)}
           disabled={saveDisabled}
           title={
@@ -478,6 +499,14 @@ export function SpecificationTab({ bp, worktree }: SpecificationTabProps) {
         >
           <Save className="size-3.5" aria-hidden />
           {save.kind === 'saving' ? 'Saving…' : save.kind === 'conflict' ? 'Overwrite' : 'Save'}
+        </Button>
+        <Button
+          size="sm"
+          onClick={() => void onBuildAutomation()}
+          title="Send this description to the coding agent and open the Coding Agent tab"
+        >
+          <Bot className="size-3.5" aria-hidden />
+          Build automation
         </Button>
       </header>
 
